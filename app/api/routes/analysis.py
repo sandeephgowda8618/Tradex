@@ -59,6 +59,7 @@ def create_analysis(
     logger.info("POST /analysis | symbol=%s", symbol)
     api_key = os.getenv("ALPHA_VANTAGE_API_KEY", "")
     if not api_key:
+        logger.error("ALPHA_VANTAGE_API_KEY not configured")
         raise HTTPException(status_code=500, detail="ALPHA_VANTAGE_API_KEY not configured")
 
     try:
@@ -121,6 +122,32 @@ def create_analysis(
 @router.get("/{analysis_id}")
 def get_analysis(analysis_id: str, db: Session = Depends(get_db)) -> dict:
     logger.info("GET /analysis/%s", analysis_id)
+    result = (
+        db.query(AnalysisResult)
+        .filter(AnalysisResult.analysis_id == analysis_id)
+        .first()
+    )
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+
+    return {
+        "fundamental": result.fundamental_json,
+        "technical": result.technical_json,
+        "combined": result.combined_json,
+        "llm_status": result.llm_status,
+        "llm_summary": result.llm_summary,
+        "llm_bull_case": result.llm_bull_case,
+        "llm_bear_case": result.llm_bear_case,
+        "llm_risk_assessment": result.llm_risk_assessment,
+        "llm_confidence": result.llm_confidence,
+        "llm_ready": result.llm_summary is not None,
+    }
+
+
+@router.get("/")
+def get_analysis_by_query(analysis_id: str, db: Session = Depends(get_db)) -> dict:
+    logger.info("GET /analysis?analysis_id=%s", analysis_id)
     result = (
         db.query(AnalysisResult)
         .filter(AnalysisResult.analysis_id == analysis_id)

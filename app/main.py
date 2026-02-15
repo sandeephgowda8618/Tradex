@@ -1,19 +1,29 @@
 from __future__ import annotations
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from app.api.routes.analysis import router as analysis_router
-from app.utils.logger import setup_logger
-from app.utils.logger import get_logger
+from app.utils.env import load_env_file
+from app.utils.logger import setup_logger, get_logger
 from app.db.session import engine
 from app.models import Base
 
 
+load_env_file()
 setup_logger()
 app = FastAPI()
 app.include_router(analysis_router)
 logger = get_logger("request")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.on_event("startup")
@@ -33,6 +43,12 @@ async def log_requests(request: Request, call_next):
     except Exception:
         logger.exception("Request failed | %s %s", method, url)
         raise
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled exception | %s %s", request.method, request.url)
+    raise exc
 
 
 if __name__ == "__main__":

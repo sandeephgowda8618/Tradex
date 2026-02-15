@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from app.utils.env import load_env_file
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -12,6 +13,7 @@ def _sqlite_connect_args(database_url: str) -> dict:
     return {}
 
 
+load_env_file()
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
 
 engine = create_engine(DATABASE_URL, connect_args=_sqlite_connect_args(DATABASE_URL))

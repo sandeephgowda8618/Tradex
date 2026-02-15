@@ -400,52 +400,80 @@ class TechnicalEngine:
                 slope_direction = "Down"
 
         if include("sma_50"):
-            indicators["sma_50"] = {
-                "value": sma50,
-                "signal": "Above 200" if sma50 is not None and sma200 is not None and sma50 > sma200 else "Below 200",
-                "score": min(
-                    10.0,
-                    max(
-                        0.0,
-                        (3.0 if sma50 is not None and sma200 is not None and sma50 > sma200 else 0.0)
-                        + (2.0 if latest_price is not None and sma50 is not None and latest_price > sma50 else 0.0)
-                        + (1.0 if slope_direction == "Up" else 0.0),
+            if sma50 is None or sma200 is None or latest_price is None:
+                indicators["sma_50"] = {
+                    "value": sma50,
+                    "signal": "Insufficient data",
+                    "score": None,
+                    "regime": "Insufficient data",
+                }
+            else:
+                indicators["sma_50"] = {
+                    "value": sma50,
+                    "signal": "Above 200"
+                    if sma50 is not None and sma200 is not None and sma50 > sma200
+                    else "Below 200",
+                    "score": min(
+                        10.0,
+                        max(
+                            0.0,
+                            (3.0 if sma50 is not None and sma200 is not None and sma50 > sma200 else 0.0)
+                            + (2.0 if latest_price is not None and sma50 is not None and latest_price > sma50 else 0.0)
+                            + (1.0 if slope_direction == "Up" else 0.0),
+                        ),
                     ),
-                ),
-                "regime": trend_context["signal"],
-            }
+                    "regime": trend_context["signal"],
+                }
         if include("sma_200"):
-            indicators["sma_200"] = {
-                "value": sma200,
-                "signal": "Price Above"
-                if latest_price is not None and sma200 is not None and latest_price > sma200
-                else "Price Below",
-                "score": min(
-                    10.0,
-                    max(
-                        0.0,
-                        (4.0 if latest_price is not None and sma200 is not None and latest_price > sma200 else 0.0)
-                        + (2.0 if sma50 is not None and sma200 is not None and sma50 > sma200 else 0.0)
-                        + (1.0 if slope_direction == "Up" else 0.0),
+            if sma200 is None or latest_price is None or sma50 is None:
+                indicators["sma_200"] = {
+                    "value": sma200,
+                    "signal": "Insufficient data",
+                    "score": None,
+                    "regime": "Insufficient data",
+                }
+            else:
+                indicators["sma_200"] = {
+                    "value": sma200,
+                    "signal": "Price Above"
+                    if latest_price is not None and sma200 is not None and latest_price > sma200
+                    else "Price Below",
+                    "score": min(
+                        10.0,
+                        max(
+                            0.0,
+                            (4.0 if latest_price is not None and sma200 is not None and latest_price > sma200 else 0.0)
+                            + (2.0 if sma50 is not None and sma200 is not None and sma50 > sma200 else 0.0)
+                            + (1.0 if slope_direction == "Up" else 0.0),
+                        ),
                     ),
-                ),
-                "regime": trend_context["direction"],
-            }
+                    "regime": trend_context["direction"],
+                }
         if include("ema_20"):
-            indicators["ema_20"] = {
-                "value": ema20,
-                "signal": "Price Above" if latest_price is not None and ema20 is not None and latest_price > ema20 else "Price Below",
-                "score": min(
-                    10.0,
-                    max(
-                        0.0,
-                        (2.0 if latest_price is not None and ema20 is not None and latest_price > ema20 else 0.0)
-                        + (2.0 if ema20 is not None and sma50 is not None and ema20 > sma50 else 0.0)
-                        + (1.0 if slope_direction == "Up" else 0.0),
+            if ema20 is None or sma50 is None or latest_price is None:
+                indicators["ema_20"] = {
+                    "value": ema20,
+                    "signal": "Insufficient data",
+                    "score": None,
+                    "regime": "Insufficient data",
+                }
+            else:
+                indicators["ema_20"] = {
+                    "value": ema20,
+                    "signal": "Price Above"
+                    if latest_price is not None and ema20 is not None and latest_price > ema20
+                    else "Price Below",
+                    "score": min(
+                        10.0,
+                        max(
+                            0.0,
+                            (2.0 if latest_price is not None and ema20 is not None and latest_price > ema20 else 0.0)
+                            + (2.0 if ema20 is not None and sma50 is not None and ema20 > sma50 else 0.0)
+                            + (1.0 if slope_direction == "Up" else 0.0),
+                        ),
                     ),
-                ),
-                "regime": trend_context["direction"],
-            }
+                    "regime": trend_context["direction"],
+                }
 
         if include("rsi"):
             indicators["rsi"] = self._rsi_signal(rsi_latest, trend_context["direction"])

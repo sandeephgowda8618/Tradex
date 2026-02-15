@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 from typing import Any, Dict
 
@@ -9,10 +10,17 @@ from app.utils.logger import get_logger
 
 
 class InterpretationEngine:
-    def __init__(self, model: str = "llama3:8b", base_url: str = "http://localhost:11434/api/generate") -> None:
-        self.model = model
-        self.base_url = base_url
+    def __init__(self, model: str = "llama3:8b", base_url: str = "http://localhost:11434") -> None:
+        env_model = os.getenv("OLLAMA_MODEL")
+        env_base = os.getenv("OLLAMA_BASE_URL")
+        self.model = env_model or model
+        self.base_url = self._normalize_base_url(env_base or base_url)
         self.logger = get_logger(self.__class__.__name__)
+
+    def _normalize_base_url(self, url: str) -> str:
+        if url.endswith("/api/generate"):
+            return url
+        return url.rstrip("/") + "/api/generate"
 
     def _build_prompt(self, data: Dict[str, Any]) -> str:
         return (
@@ -49,6 +57,31 @@ class InterpretationEngine:
             },
             timeout=90,
         )
+        if response.status_code == 404 and "not found" in response.text.lower():
+            self.logger.warning("Model not found. Attempting fallback.")
+            fallback = self._fallback_model()
+            if not fallback:
+                raise Exception("No available models found for fallback.")
+            if fallback != self.model:
+                self.logger.info("Retrying with fallback model=%s", fallback)
+            response = requests.post(
+                self.base_url,
+                json={
+                    "model": fallback,
+                    "prompt": prompt,
+                    "stream": False,
+                },
+                timeout=90,
+            )
+            self.model = fallback
+        elif response.status_code >= 400:
+            self.logger.error(
+                "LLM HTTP error | status=%s | body=%s",
+                response.status_code,
+                response.text,
+            )
+            response.raise_for_status()
+
         response.raise_for_status()
         output = response.json().get("response", "")
         self.logger.info("LLM response received in %.2fs", time.time() - start_time)
@@ -65,3 +98,17 @@ class InterpretationEngine:
             "raw_output": output,
             "parsed": parsed,
         }
+
+    def _fallback_model(self) -> str | None:
+        try:
+            tags_url = self.base_url.replace("/api/generate", "/api/tags")
+            resp = requests.get(tags_url, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+            models = data.get("models", [])
+            if not models:
+                return None
+            return models[0].get("name")
+        except Exception:
+            self.logger.exception("Failed to fetch Ollama tags for fallback")
+            return None
