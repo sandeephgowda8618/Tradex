@@ -1,0 +1,2 @@
+# Tradex
+A trading Analyst 
