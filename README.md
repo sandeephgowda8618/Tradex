@@ -1,5 +1,8 @@
 # Tradex
 
+[![CI](https://github.com/sandeephgowda8618/Tradex/actions/workflows/ci.yml/badge.svg)](https://github.com/sandeephgowda8618/Tradex/actions/workflows/ci.yml)
+
+
 A deterministic financial intelligence system with an LLM narration layer. The backend computes fundamentals and technicals deterministically, caches market data, stores immutable analysis snapshots, and asynchronously produces LLM interpretations. The frontend is a lightweight React UI that submits symbols, polls results, and renders scores with a professional layout.
 
 ---
